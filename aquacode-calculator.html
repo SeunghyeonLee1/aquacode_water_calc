@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>생수 + 아쿠아코드 계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8EEEC; --surface:#F6F9F8; --ink:#17262A; --muted:#56686C; --line:#C6D1CF;
+  --a:#1E6E78; --b:#A9720C; --mix:#5A3423; --zone:rgba(30,110,120,.10); --zone2:rgba(90,52,35,.10);
+  --good:#2E7D4F; --warn:#B4541A; --chip:#DCE5E3;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E181A; --ink:#E2EBE9; --muted:#93A5A8; --line:#2A3C41;
+    --a:#52B6C1; --b:#E2AE4C; --mix:#DDA684; --zone:rgba(82,182,193,.12); --zone2:rgba(221,166,132,.12);
+    --good:#6CC892; --warn:#F0935A; --chip:#1E3035; --surface:#152327;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E181A; --surface:#152327; --ink:#E2EBE9; --muted:#93A5A8; --line:#2A3C41;
+  --a:#52B6C1; --b:#E2AE4C; --mix:#DDA684; --zone:rgba(82,182,193,.12); --zone2:rgba(221,166,132,.12);
+  --good:#6CC892; --warn:#F0935A; --chip:#1E3035; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:"Gowun Batang","Nanum Myeongjo",Georgia,serif;font-weight:700;line-height:1.25;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+header{padding:48px 0 28px}
+header h1{font-size:clamp(2rem,5vw,3.2rem);letter-spacing:-.01em}
+header p{max-width:60ch;color:var(--muted);margin:.6em 0 0}
+nav.tabs{display:flex;gap:6px;margin-top:24px;flex-wrap:wrap}
+nav.tabs a{padding:8px 14px;border-radius:999px;text-decoration:none;color:var(--ink);background:var(--chip);font-weight:500;font-size:.95rem}
+nav.tabs a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+section{padding:28px 0 40px;border-top:1px solid var(--line)}
+section>h2{font-size:1.7rem;margin-bottom:6px}
+section>.lead{color:var(--muted);margin:0 0 22px;max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:28px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+label.f{display:block;font-size:.88rem;color:var(--muted);margin-bottom:4px}
+select,input[type=number],input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+.pick{display:grid;grid-template-columns:14px 1fr;gap:10px;align-items:center;margin-bottom:14px}
+.sw{width:14px;height:14px;border-radius:50%}
+.ratio{margin:20px 0 6px}
+.ratio-head{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;font-weight:600}
+.ratio-head .a{color:var(--a)} .ratio-head .b{color:var(--b)}
+input[type=range]{width:100%;accent-color:var(--mix);margin:8px 0}
+.vol{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.vol>div{flex:1;min-width:120px}
+.amounts{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.95rem;margin-top:8px}
+.amounts strong{color:var(--ink)}
+.chartbox{position:relative}
+svg.map{width:100%;height:auto;display:block;touch-action:none;cursor:crosshair}
+.legend{font-size:.85rem;color:var(--muted);margin-top:6px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:22px 0}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.metric .v{font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.metric .k{font-size:.85rem;color:var(--muted)}
+.metric .s{font-size:.8rem;color:var(--muted)}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.93rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--muted);font-weight:500}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+h3{font-size:1.2rem;margin:4px 0 12px}
+.fit{display:grid;grid-template-columns:9.5em 1fr 3em;gap:10px;align-items:center;margin:9px 0;font-size:.95rem}
+.bar{height:10px;border-radius:5px;background:var(--chip);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--mix);border-radius:5px;transition:width .25s}
+.fit .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.notes p{margin:0 0 12px}
+.notes b{font-weight:600}
+.warn{color:var(--warn)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tag{background:var(--chip);border-radius:999px;padding:3px 11px;font-size:.88rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer;text-align:left;max-width:260px}
+.chip small{display:block;color:var(--muted);font-size:.82rem;line-height:1.4}
+.chip[aria-pressed=true]{border-color:var(--mix);box-shadow:inset 0 0 0 1px var(--mix);background:var(--zone2)}
+.owned{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.93rem;margin:8px 0 18px}
+.owned label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.rec{display:grid;grid-template-columns:1fr auto;gap:6px 16px;padding:14px 0;border-bottom:1px solid var(--line);align-items:center}
+.rec .name{font-weight:600}
+.rec .meta{color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+.rec .score{font-family:"Gowun Batang",serif;font-size:1.5rem;font-variant-numeric:tabular-nums;text-align:right}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn.primary{background:var(--mix);color:var(--bg);border-color:var(--mix)}
+.btn.small{padding:4px 9px;font-size:.85rem}
+.empty{color:var(--muted);padding:12px 0}
+.est{color:var(--muted);font-size:.78em;margin-left:2px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:12px 0}
+.formgrid .wide{grid-column:1/-1}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+footer{padding:28px 0 48px;color:var(--muted);font-size:.88rem;border-top:1px solid var(--line)}
+footer p{max-width:75ch}
+a{color:var(--a)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-weight:500;border:0;background:var(--surface);color:var(--ink);padding:9px 16px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--mix);color:var(--bg)}
+.stepper{display:flex;align-items:center;gap:12px;margin:4px 0}
+.stepper .btn{width:44px;height:44px;font-size:1.4rem;padding:0;line-height:1}
+.stepper output{font-family:"Gowun Batang",Georgia,serif;font-size:2.2rem;font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:center}
+details.panel summary{cursor:pointer;list-style-position:inside}
+details.panel[open] summary{margin-bottom:8px}
+.errbox{max-width:1120px;margin:16px auto 0;padding:16px 20px;border:1px solid var(--warn);border-radius:12px;background:var(--surface)}
+.errbox p{margin:6px 0 12px}
+.errbox .errmsg{font-size:.82rem;color:var(--muted);margin:10px 0 0}
+.rec .dose{font-size:.98rem;color:var(--mix);font-weight:600;margin:2px 0}
+
+</style>
+</head>
+<body>
+<div id="errBox" class="errbox" role="alert" hidden>
+  <b>페이지를 여는 중 문제가 생겼습니다.</b>
+  <p>저장된 설정이 꼬였을 수 있습니다. 아래 버튼을 누르면 이 계산기에 저장된 설정(직접 추가한 생수, 보정값 포함)을 지우고 다시 엽니다.</p>
+  <button class="btn primary" id="errReset" type="button">설정 초기화하고 다시 열기</button>
+  <p class="errmsg" id="errMsg"></p>
+</div>
+<script>
+(function(){
+  function show(msg){ var b=document.getElementById("errBox"); if(!b) return; b.hidden=false; var m=document.getElementById("errMsg"); if(m && msg) m.textContent="오류: "+msg; }
+  window.__aqShowError = show;
+  window.addEventListener("error", function(e){ show(e && e.message); });
+  document.getElementById("errReset").addEventListener("click", function(){
+    try{ localStorage.removeItem("aquacode-calc-v1"); }catch(e){}
+    location.reload();
+  });
+})();
+</script>
+<div class="wrap">
+<header>
+  <h1>생수 + 아쿠아코드 계산기</h1>
+  <p>생수에 아쿠아코드를 몇 방울 넣으면 미네랄 조성이 어떻게 바뀌는지 계산하고, 원하는 맛에 맞는 생수와 방울 수 조합을 찾아 드립니다. 드롭스와 파우더(7L 1포) 모두 계산할 수 있어요.</p>
+  <nav class="tabs" aria-label="바로가기">
+    <a href="#calc">계산</a><a href="#recommend">뉘앙스로 추천</a><a href="#waters">생수 데이터</a>
+  </nav>
+</header>
+
+<section id="calc">
+  <h2>계산</h2>
+  <p class="lead">아쿠아코드는 칼슘과 마그네슘(경도의 약 82%가 마그네슘)을 더하고 알칼리도는 더하지 않습니다. 그래서 지도 위에서 방울을 넣을수록 점이 위로 곧게 올라갑니다. 가로 위치(KH)는 베이스 생수가 정합니다.</p>
+  <div class="grid">
+    <div class="panel">
+      <div class="pick"><span class="sw" style="background:var(--a)"></span><div><label class="f" for="selA">베이스 생수</label><select id="selA"></select></div></div>
+      <div class="pick"><span class="sw" style="background:var(--muted)"></span><div><label class="f" for="selB">함께 섞을 생수 (선택)</label><select id="selB"></select></div></div>
+      <div class="ratio" id="bRow" hidden>
+        <div class="ratio-head"><span class="a" id="pctAlabel">A 70%</span><span class="b" id="pctBlabel" style="color:var(--muted)">B 30%</span></div>
+        <input type="range" id="ratio" min="0" max="100" step="5" value="70" aria-label="베이스 생수 비율">
+      </div>
+
+      <div style="margin:18px 0 12px"><span class="f" style="display:block;font-size:.88rem;color:var(--muted);margin-bottom:6px">아쿠아코드 형태</span>
+        <div class="seg" id="formSeg" role="group" aria-label="아쿠아코드 형태"><button data-form="drops" aria-pressed="true">드롭스</button><button data-form="powder" aria-pressed="false">파우더 (7L 1포)</button></div>
+      </div>
+
+      <div id="dropsPanel">
+        <div class="vol"><div><label class="f" for="vol">물 양 (mL)</label><input type="number" id="vol" min="50" step="50" value="500"></div></div>
+        <label class="f" style="margin-top:14px">방울 수</label>
+        <div class="stepper"><button class="btn" id="minus" aria-label="한 방울 빼기">−</button><output id="dropsOut" aria-live="polite">3</output><button class="btn" id="plus" aria-label="한 방울 더하기">+</button><span style="color:var(--muted)">방울</span></div>
+        <input type="range" id="dropsRange" min="0" max="40" step="1" value="3" aria-label="방울 수">
+      </div>
+      <div id="powderPanel" hidden>
+        <label class="f" for="powderRange">1포를 녹일 물의 양</label>
+        <div class="stepper"><output id="powderOut">7 L</output></div>
+        <input type="range" id="powderRange" min="1" max="20" step="0.5" value="7" aria-label="물의 양 (리터)">
+        <p style="font-size:.85rem;color:var(--muted);margin:4px 0 0">제조사 희석표 기준 필터 커피는 4.5~10 L, 에스프레소는 4~7 L를 권합니다.</p>
+      </div>
+      <div class="amounts" id="recipe" style="margin-top:14px"></div>
+    </div>
+    <div class="chartbox">
+      <svg class="map" id="map" viewBox="0 0 560 420" role="img" aria-label="경도(GH)와 알칼리도(KH) 지도"></svg>
+      <div class="legend">가로축 알칼리도(KH), 세로축 총경도(GH), 단위는 mg/L as CaCO₃이며 제곱근 눈금입니다. 파란 점이 베이스 생수, 갈색 선의 눈금 하나가 한 방울, 큰 점이 최종 결과입니다. 주황 점선 원은 추천 탭에서 고른 목표 뉘앙스입니다.</div>
+    </div>
+  </div>
+
+  <details class="panel" id="cal" style="margin-top:22px">
+    <summary><b>방울 세기 보정</b> · 내 드롭스와 TDS 미터에 맞추기</summary>
+    <p style="font-size:.92rem;color:var(--muted)">정제수(제로워터 등)에 아쿠아코드를 떨어뜨리고 TDS 미터로 잰 값을 넣으면, 한 방울에 든 미네랄 양을 다시 계산합니다. 기본값은 제로워터 500 mL에 3방울을 넣었을 때 50 ppm입니다.</p>
+    <div class="formgrid">
+      <div><label class="f" for="calVol">정제수 (mL)</label><input type="number" id="calVol" min="10" step="10"></div>
+      <div><label class="f" for="calDrops">방울 수</label><input type="number" id="calDrops" min="1" step="1"></div>
+      <div><label class="f" for="calTds">TDS 측정값 (ppm)</label><input type="number" id="calTds" min="0" step="1"></div>
+    </div>
+    <p id="calOut" style="margin:0 0 12px;font-size:.95rem"></p>
+    <button class="btn small" id="calReset">기본값으로</button>
+  </details>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="cols">
+    <div>
+      <h3>어울리는 추출</h3>
+      <div id="fits"></div>
+      <h3 style="margin-top:26px">이온 조성 (mg/L)</h3>
+      <div class="tablewrap"><table id="ions"></table></div>
+    </div>
+    <div>
+      <h3>예상 뉘앙스</h3>
+      <div class="tags" id="tags"></div>
+      <div class="notes" id="notes"></div>
+    </div>
+  </div>
+</section>
+
+<section id="recommend">
+  <h2>뉘앙스로 추천</h2>
+  <p class="lead">원하는 맛을 고르고 가지고 있는 생수에 체크하면, 각 생수에 아쿠아코드를 몇 방울(파우더라면 1포에 물 몇 L) 넣어야 목표에 가장 가까운지 찾아 드립니다. 방울 수는 계산 탭의 물 양 기준입니다.</p>
+  <div class="chips" id="nuances" role="group" aria-label="원하는 뉘앙스"></div>
+  <div><label class="f">가지고 있는 생수</label>
+    <div class="owned" id="owned"></div>
+    <div class="actions" style="margin-bottom:12px"><button class="btn small" id="ownAll">모두 선택</button><button class="btn small" id="ownNone">모두 해제</button></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-bottom:18px;cursor:pointer"><input type="checkbox" id="pairs"> 생수 두 가지까지 섞기 (10% 단위)</label>
+  </div>
+  <div class="panel">
+    <div id="targetInfo" style="color:var(--muted);font-size:.92rem"></div>
+    <div id="recs"></div>
+  </div>
+</section>
+
+<section id="waters">
+  <h2>생수 데이터</h2>
+  <p class="lead">기본값은 <a href="https://wateratlas.co.kr/bottled-water" target="_blank" rel="noopener">Water Atlas</a>가 정리한 제조사·공식 수입원·공공기관의 공개 성분표(2026년 11월 확인)입니다. 라벨이 범위로 표기된 제품은 중간값을 썼고, 같은 성분표를 쓰는 제품은 한 줄로 묶었습니다. 같은 브랜드라도 공장·로트마다 달라지니 손에 든 병의 라벨을 보고 수정해 주세요. 바꾼 값은 이 브라우저에만 저장됩니다. 중탄산(HCO₃⁻)을 공개하지 않은 제품은 양이온 당량의 66%를 중탄산으로 보고 추정했으며 “추정”으로 표시했습니다. 66%는 국립환경과학원이 조사한 국내 먹는샘물 원수 320곳의 평균 이온 조성에서 계산한 값입니다. 피지의 중탄산은 해외 라벨 공개값입니다. 단, 해양심층수는 탈염한 물에 염화물·황산염 위주의 미네랄 농축액을 더해 만들기 때문에 이 추정이 맞지 않아, 중탄산을 5 mg/L(KH 약 4)로 두었습니다. 아쿠아 파나와 정제수는 블렌딩용 참고값입니다.</p>
+  <div class="panel" id="editor">
+    <h3 id="editTitle">새 물 추가</h3>
+    <div class="formgrid">
+      <div class="wide"><label class="f" for="fName">이름</label><input type="text" id="fName" placeholder="예: 우리 동네 약수"></div>
+      <div><label class="f" for="fCa">칼슘 Ca</label><input type="number" id="fCa" step="0.1" min="0"></div>
+      <div><label class="f" for="fMg">마그네슘 Mg</label><input type="number" id="fMg" step="0.1" min="0"></div>
+      <div><label class="f" for="fNa">나트륨 Na</label><input type="number" id="fNa" step="0.1" min="0"></div>
+      <div><label class="f" for="fK">칼륨 K</label><input type="number" id="fK" step="0.1" min="0"></div>
+      <div><label class="f" for="fHCO3">중탄산 HCO₃</label><input type="number" id="fHCO3" step="0.1" min="0"></div>
+      <div><label class="f" for="fTDS">TDS (선택)</label><input type="number" id="fTDS" step="1" min="0" placeholder="비우면 추정"></div>
+    </div>
+    <p style="font-size:.85rem;color:var(--muted);margin:0 0 12px">라벨에 범위로 적혀 있으면 중간값을 넣으세요. 중탄산을 모르면 알칼리도(KH) ÷ 0.82로 바꿔 넣을 수 있습니다.</p>
+    <div class="actions"><button class="btn primary" id="save">물 추가</button><button class="btn" id="cancel" hidden>취소</button></div>
+    <p id="formMsg" class="warn" style="margin:10px 0 0;font-size:.9rem"></p>
+  </div>
+  <div class="tablewrap" style="margin-top:20px"><table id="dbTable"></table></div>
+</section>
+<footer>
+  <p>아쿠아코드 성분은 제조사의 7L 희석표 기준입니다. 1포에 Ca 31.1, Mg 84.0, Na 2.8, K 2.8 mg이 들어 있고(1 L에 녹이면 TDS 590 ppm), 드롭스도 같은 조성으로 보았습니다. 희석표에 중탄산이 없어 아쿠아코드가 더하는 알칼리도는 0으로 계산합니다. 한 방울의 양은 기본값(제로워터 500 mL + 3방울 = 50 ppm)으로 1포의 약 1/71이며, 방울 크기와 TDS 미터에 따라 달라지니 보정 칸에서 직접 맞춰 주세요.</p>
+  <p>생수 성분은 Water Atlas가 정리한 공개 성분표의 중간값이며, 중탄산을 공개하지 않은 국내 제품은 국립환경과학원 먹는샘물 원수 조사의 평균 이온 조성을 바탕으로 추정했습니다(±20~25%). 생수 TDS는 이온 합으로 추정한 값이라 미터 측정값과 다를 수 있습니다. GH = Ca×2.497 + Mg×4.118, KH = HCO₃×0.820 (mg/L as CaCO₃). 추출 범위와 뉘앙스 해설은 참고용 출발점입니다.</p>
+</footer>
+</div>
+<script>
+(function(){
+"use strict";
+// ---------- Data (mg/L). est: HCO3 is an estimate ----------
+// 출처: WaterAtlas.co.kr 생수 성분 비교 (제조사·공식 수입원·공공기관 공개 성분표, 2026-11 확인)
+// [lo,hi]는 라벨 범위 → 중간값 사용. hco3 미공개 → 양이온 당량의 66%를 중탄산으로 보고 추정 (국립환경과학원 2015 먹는샘물 원수 320곳 평균 이온수지).
+const RAW = [
+  {id:"samdasu", name:"제주삼다수", ca:[2.5,4], mg:[1.7,3.5], na:[4,7.2], k:[1.5,3.4]},
+  {id:"isis_cheongwon", name:"아이시스 (청원)", ca:[11.2,16.9], mg:[3.7,5.4], na:[1.3,2], k:[0.4,0.8]},
+  {id:"isis_sancheong", name:"아이시스 (산청)", ca:[9,11.2], mg:[1,1.5], na:[3.5,4.8], k:[0.9,1.1]},
+  {id:"isis_baekhak", name:"아이시스 (백학)", ca:[21.1,28.1], mg:[5,6.8], na:[3.9,4.9], k:[1.1,1.7]},
+  {id:"sunchang", name:"순창샘물 · 아이시스8.0(순창) · 탐사수", ca:[16.5,21.4], mg:[0.2,0.4], na:[11.5,18.7], k:[0.3,0.7]},
+  {id:"sparkle_daejeong", name:"스파클 (대정 · 천안)", ca:[10.5,33.2], mg:[1.9,14], na:[8.2,14.2], k:[0.9,2.7], wide:true},
+  {id:"sparkle_samjeong", name:"스파클 (삼정샘물 · 울주 두서)", ca:[6.29,9.66], mg:[1.62,2.15], na:[12.7,16.53], k:[0.17,0.4]},
+  {id:"sparkle_pocheon", name:"스파클 (포천샘물 · 일동)", ca:[24.6,27.6], mg:[3.5,4], na:[19.1,20.8], k:[1.2,1.4]},
+  {id:"sparkle_pocheonsm", name:"스파클 (포천에스엠 · 영북)", ca:[7.9,20.9], mg:[1.4,3.4], na:[3.7,8.3], k:[0.2,0.8], wide:true},
+  {id:"sparkle_alps", name:"스파클 (알프스샘물 · 울주 상북)", ca:[4.48,34.58], mg:[0.14,5.07], na:[9.03,55.5], k:[0,2.21], wide:true},
+  {id:"gapyeong", name:"이동크리스탈(가평) · 스파클(우리샘물)", ca:[18.6,21.6], mg:[3.9,4.5], na:[7.2,10.5], k:[1.2,1.4]},
+  {id:"baeksan", name:"백산수", ca:[3,5.8], mg:[2.1,5.4], na:[4,12], k:[1.4,5.3]},
+  {id:"seoksu_cheongju", name:"석수 (청주)", ca:[24.1,30.1], mg:[3,4.5], na:[4.1,5.8], k:[1.3,1.8]},
+  {id:"seoksu_sejong", name:"석수 (세종)", ca:[46.6,60.9], mg:[8.3,10.6], na:[16.4,21.2], k:[2.5,2.9]},
+  {id:"pulmuone", name:"풀무원샘물", ca:[13.5,18.6], mg:[2,2.4], na:[6.7,7.6], k:[0.4,0.6]},
+  {id:"pulmuone_pure", name:"풀무원 퓨어", ca:[9.7,14.7], mg:[1.3,2.1], na:[5.2,8], k:[0.3,0.6]},
+  {id:"pulmuone_tuo", name:"풀무원 투오 미니 워터팩", ca:[7.3,15], mg:[1.2,1.7], na:[4.2,5.7], k:[0.4,0.5]},
+  {id:"pulmuone15_pocheon", name:"풀무원샘물 15L (포천)", ca:[8.6,13], mg:[1.1,1.8], na:[4.8,7.4], k:[0.6,1]},
+  {id:"pulmuone15_hadong", name:"풀무원샘물 15L (하동)", ca:[8.8,13.4], mg:[0.9,1.5], na:[2.9,4.5], k:[0.5,0.9]},
+  {id:"maekeun_pocheon", name:"맑은샘수 · 이동크리스탈(포천)", ca:[8.1,13.5], mg:[1.1,1.3], na:[4.7,6.7], k:[0.4,0.7]},
+  {id:"maekeun_jirisan", name:"맑은샘 지리산", ca:[10.7,11.8], mg:[0,0.8], na:[3.6,4.6], k:[0,1.1]},
+  {id:"montbest", name:"몽베스트", ca:[7.6,12.2], mg:[1.2,1.3], na:[5.1,6.7], k:[0.4,0.7]},
+  {id:"deeps_green", name:"딥스 그린 · 풀무원 해양심층수", ca:[5,9], mg:[15,26], na:[3,11], k:[4,9], hco3:5, ocean:true},
+  {id:"deeps_blue", name:"딥스 블루 · 키즈", ca:[6,14], mg:[24,36], na:[5,16], k:[7,13], hco3:5, ocean:true},
+  {id:"deeps_gold", name:"딥스 골드", ca:[10,18], mg:[33,48], na:[7,22], k:[10,18], hco3:5, ocean:true},
+  {id:"whistler", name:"휘슬러 워터", ca:9.5, mg:0.95, na:1.3, k:0.6, hco3:28},
+  {id:"voss", name:"보스 (스틸)", ca:2.7, mg:0.61, na:3, k:0, tds:40},
+  {id:"volvic", name:"볼빅", ca:13, mg:9, na:12, k:7, hco3:80},
+  {id:"fiji", name:"피지 워터", ca:[12,19], mg:[10,16], na:[12,20], k:[4,5.6], hco3:152},
+  {id:"purenz", name:"퓨어엔젯 워터", ca:18.4, mg:12.6, na:29, k:47},
+  {id:"wildalp", name:"와일드알프", ca:45, mg:13, na:2, k:1, hco3:170},
+  {id:"evian", name:"에비앙", ca:80, mg:26, na:6.5, k:1, hco3:360, tds:345},
+  {id:"panna", name:"아쿠아 파나", ca:30, mg:6, na:6.5, k:1, hco3:103, ref:true},
+  {id:"pure", name:"정제수 · 제로워터 (증류·RO)", ca:0, mg:0, na:0, k:0, hco3:0, tds:0, ref:true}
+];
+const mid = v => Array.isArray(v) ? (v[0]+v[1])/2 : v;
+const BASE = RAW.map(r => {
+  const w = {id:r.id, name:r.name, wide:!!r.wide, ref:!!r.ref, ranged:["ca","mg","na","k"].some(k=>Array.isArray(r[k]))};
+  ["ca","mg","na","k"].forEach(k => w[k] = Math.round(mid(r[k])*100)/100);
+  if(typeof r.tds === "number") w.tds = r.tds;
+  w.ocean = !!r.ocean;
+  if(typeof r.hco3 === "number"){ w.hco3 = r.hco3; if(r.ocean) w.est = true; }
+  else { const meq = w.ca/20.04 + w.mg/12.15 + w.na/22.99 + w.k/39.1; w.hco3 = Math.round(meq*0.66*61.02*10)/10; w.est = true; }
+  return w;
+});
+const IONS = [["ca","칼슘 Ca"],["mg","마그네슘 Mg"],["na","나트륨 Na"],["k","칼륨 K"],["hco3","중탄산 HCO₃"]];
+
+const STYLES = [
+  {id:"light", name:"라이트 로스트 핸드드립", gh:[50,90], kh:[10,35], mg:0.45},
+  {id:"medium", name:"미디엄 로스트 필터", gh:[60,110], kh:[25,50], mg:0.35},
+  {id:"dark", name:"다크 로스트 필터", gh:[60,120], kh:[40,70], mg:0},
+  {id:"espresso", name:"에스프레소", gh:[50,100], kh:[35,65], mg:0},
+  {id:"cold", name:"콜드브루·침출식", gh:[60,130], kh:[30,70], mg:0}
+];
+const SCA = {gh:[50,175], kh:[40,75]};
+
+const NUANCES = [
+  {id:"bright", name:"화사한 산미", desc:"시트러스·베리처럼 밝은 산미와 향을 앞으로", gh:70, kh:20, mg:0.6},
+  {id:"sweet", name:"단맛과 균형", desc:"산미·단맛·바디가 고르게, 무난한 데일리", gh:85, kh:38, mg:0.45},
+  {id:"body", name:"묵직한 바디", desc:"초콜릿·견과, 무게감 있는 질감", gh:115, kh:55, mg:0.25},
+  {id:"round", name:"부드럽고 둥근", desc:"산미는 눌러 두고 매끄럽게", gh:60, kh:50, mg:0.3},
+  {id:"clean", name:"맑은 클린컵", desc:"가볍고 투명하게, 섬세한 향 위주", gh:45, kh:22, mg:0.5},
+  {id:"espresso", name:"에스프레소 안정", desc:"추출은 충분히, 머신 스케일은 적게", gh:75, kh:45, mg:0.4}
+];
+
+// ---------- AQUACODE ----------
+// 7L 1포의 총량 (mg). 제조사 희석표: 1포를 1 L에 녹이면 Ca 31.1, Mg 84.0, Na 2.8, K 2.8 ppm, TDS 590 ppm.
+// 표에 중탄산이 없으므로 KH 기여는 0으로 본다.
+const SACHET = {ca:31.1, mg:84.0, na:2.8, k:2.8, hco3:0, tds:590};
+const ZERO = {ca:0,mg:0,na:0,k:0,hco3:0,tds:0};
+
+// ---------- Storage ----------
+const KEY = "aquacode-calc-v1";
+const DEF_CAL = {vol:500, drops:3, tds:50};
+let store = {custom:[], overrides:{}, owned:null, a:"pure", b:"", pct:70, form:"drops", drops:3, vol:500, powderL:7, cal:Object.assign({},DEF_CAL), nuance:"bright", pairs:false};
+try{ const raw = localStorage.getItem(KEY); if(raw){ const saved = JSON.parse(raw); if(saved && typeof saved === "object") store = Object.assign(store, saved); } }catch(e){}
+(function sanitize(s){
+  const num = (v, lo, hi, def) => (typeof v === "number" && isFinite(v) && v >= lo && v <= hi) ? v : def;
+  const IONK = ["ca","mg","na","k","hco3"];
+  const okIons = o => o && typeof o === "object" && IONK.every(k => typeof o[k] === "number" && isFinite(o[k]) && o[k] >= 0);
+  s.custom = Array.isArray(s.custom) ? s.custom.filter(w => okIons(w) && typeof w.id === "string" && typeof w.name === "string" && w.name) : [];
+  if(!s.overrides || typeof s.overrides !== "object" || Array.isArray(s.overrides)) s.overrides = {};
+  Object.keys(s.overrides).forEach(id => { if(!okIons(s.overrides[id]) || !BASE.some(w => w.id === id)) delete s.overrides[id]; });
+  s.owned = Array.isArray(s.owned) ? s.owned.filter(x => typeof x === "string") : null;
+  if(typeof s.a !== "string") s.a = "pure";
+  if(typeof s.b !== "string") s.b = "";
+  s.pct = num(s.pct, 0, 100, 70);
+  s.form = s.form === "powder" ? "powder" : "drops";
+  s.drops = Math.round(num(s.drops, 0, 80, 3));
+  s.vol = num(s.vol, 10, 100000, 500);
+  s.powderL = num(s.powderL, 1, 20, 7);
+  const c = s.cal || {};
+  s.cal = (num(c.vol,1,1e6,0) && num(c.drops,1,1e4,0) && num(c.tds,0,1e5,-1) >= 0) ? {vol:c.vol, drops:c.drops, tds:c.tds} : Object.assign({}, DEF_CAL);
+  if(!NUANCES.some(n => n.id === s.nuance)) s.nuance = "bright";
+  s.pairs = !!s.pairs;
+})(store);
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+function waters(){
+  const base = BASE.map(w => store.overrides[w.id] ? Object.assign({}, w, store.overrides[w.id], {edited:true}) : Object.assign({}, w));
+  return base.concat(store.custom.map(w => Object.assign({custom:true}, w)));
+}
+function byId(id){ return waters().find(w => w.id === id); }
+
+// ---------- Chemistry ----------
+const estTDS = w => w.ca + w.mg + w.na + w.k + w.hco3*0.49;
+const tdsOf = w => (typeof w.tds === "number" && !isNaN(w.tds)) ? w.tds : estTDS(w);
+function mix(list){ // list of [water, fraction]
+  const o = {ca:0,mg:0,na:0,k:0,hco3:0,tds:0};
+  list.forEach(([w,f]) => { IONS.forEach(([k]) => o[k] += w[k]*f); o.tds += tdsOf(w)*f; });
+  return o;
+}
+function derive(c){
+  const ghCa = c.ca*2.497, ghMg = c.mg*4.118, gh = ghCa+ghMg, kh = c.hco3*0.8202;
+  return {gh, kh, mgShare: gh>0.5 ? ghMg/gh : NaN, na:c.na, tds:c.tds, ratio: kh>0.5 ? gh/kh : Infinity};
+}
+
+function styleScore(d, s){
+  const out = (v,[lo,hi],sc) => v<lo ? (lo-v)/sc : v>hi ? (v-hi)/sc : 0;
+  let x = out(d.gh, s.gh, 25), y = out(d.kh, s.kh, 12);
+  let pen = x*x + y*y;
+  if(s.mg && !isNaN(d.mgShare) && d.mgShare < s.mg) pen += Math.pow((s.mg-d.mgShare)/0.25,2);
+  if(d.na > 30) pen += Math.pow((d.na-30)/15,2);
+  return Math.round(100*Math.exp(-pen/1.5));
+}
+function nuanceScore(d, t){
+  const mgs = isNaN(d.mgShare) ? t.mg : d.mgShare;
+  let d2 = Math.pow((d.gh-t.gh)/25,2) + Math.pow((d.kh-t.kh)/12,2) + Math.pow((mgs-t.mg)/0.2,2);
+  if(d.na > 20) d2 += Math.pow((d.na-20)/10,2);
+  return Math.round(100*Math.exp(-d2/3));
+}
+
+function readNuance(d){
+  const tags = [], notes = [];
+  // GH
+  if(d.gh < 25){ tags.push("추출력 약함"); notes.push(["경도","경도가 매우 낮아 커피 성분을 붙잡는 힘이 약합니다. 향은 가볍게 올라오지만 단맛과 바디가 비고 밋밋하거나 텁텁하게 느껴지기 쉽습니다. 다른 물을 섞어 경도를 50 이상으로 올려 보세요."]); }
+  else if(d.gh < 50){ tags.push("가볍고 투명"); notes.push(["경도","경도가 낮은 편이라 컵이 가볍고 투명합니다. 섬세한 꽃·차 같은 향은 잘 보이지만 단맛과 질감은 얇게 느껴질 수 있습니다."]); }
+  else if(d.gh <= 120){ tags.push("추출력 적정"); notes.push(["경도","커피 추출에 알맞은 경도입니다. 향미 성분이 고르게 뽑혀 단맛과 질감이 충분히 나옵니다."]); }
+  else if(d.gh <= 175){ tags.push("추출력 강함"); notes.push(["경도","경도가 높아 추출이 빠르게 진행됩니다. 바디는 두꺼워지지만 쓴맛·떫은맛이 함께 올라오기 쉬워 분쇄를 조금 굵게 하거나 비율을 낮춰 보세요."]); }
+  else { tags.push("과추출 경향"); notes.push(["경도","경도가 과하게 높습니다. 무겁고 텁텁하며 미네랄 특유의 쓴맛이 섞일 수 있고, 머신에는 스케일이 쌓입니다."]); }
+  // Mg share
+  if(!isNaN(d.mgShare) && d.gh >= 15){
+    if(d.mgShare >= 0.5){ tags.push("마그네슘 우세"); notes.push(["Ca·Mg 균형","경도의 "+Math.round(d.mgShare*100)+"%가 마그네슘에서 옵니다. 과일 산미와 향의 선명도가 살아나고 단맛이 또렷하게 드러나는 쪽입니다. 라이트 로스트에 잘 어울립니다."]); }
+    else if(d.mgShare >= 0.3){ tags.push("Ca·Mg 균형"); notes.push(["Ca·Mg 균형","칼슘과 마그네슘이 고르게 섞여 있어 향의 선명함과 질감 사이에서 균형을 잡습니다."]); }
+    else { tags.push("칼슘 우세"); notes.push(["Ca·Mg 균형","경도 대부분이 칼슘입니다. 바디가 둥글고 묵직해지는 대신 향과 산미의 윤곽은 다소 흐려집니다. 초콜릿·견과 계열 원두와 잘 맞습니다."]); }
+  }
+  // KH
+  if(d.kh < 15){ tags.push("산미 날카로움"); notes.push(["알칼리도","완충력이 거의 없어 산미가 그대로 드러납니다. 라이트 로스트에서는 생동감이 크지만, 과하면 시큼하고 거칠게 느껴질 수 있습니다."]); }
+  else if(d.kh < 40){ tags.push("산미 생생"); notes.push(["알칼리도","완충력이 적당히 낮아 산미가 밝게 살아 있으면서 모난 데가 덜합니다."]); }
+  else if(d.kh <= 70){ tags.push("산미 차분"); notes.push(["알칼리도","완충력이 산미를 어느 정도 눌러 줍니다. 컵이 부드럽고 단맛·카라멜 쪽으로 기웁니다. 다크 로스트나 에스프레소에서 편안한 영역입니다."]); }
+  else if(d.kh <= 110){ tags.push("산미 눌림"); notes.push(["알칼리도","완충력이 높아 산미가 많이 사라지고 컵이 평평해집니다. 밝은 원두의 개성은 묻히기 쉽습니다."]); }
+  else { tags.push("밋밋·석회감"); notes.push(["알칼리도","완충력이 매우 높아 산미가 거의 사라지고 둔하고 분필 같은 뒷맛이 남을 수 있습니다. 정제수나 저미네랄 물로 희석해 보세요."]); }
+  // Sodium
+  if(d.na > 30){ tags.push("짠맛 주의"); notes.push(["나트륨","나트륨이 높아 짭짤하거나 둔한 맛이 섞일 수 있습니다. 10 mg/L 안팎이 무난합니다."]); }
+  // Espresso scale
+  if(d.gh > 100 && d.kh > 60){ notes.push(["머신","<span class=\"warn\">경도와 알칼리도가 함께 높아 에스프레소 머신 보일러에 스케일이 쌓이기 쉬운 조합입니다.</span>"]); }
+  return {tags, notes};
+}
+
+
+function addC(x,y){ const o={}; ["ca","mg","na","k","hco3","tds"].forEach(k => o[k]=x[k]+y[k]); return o; }
+function perDrop(){
+  const c = store.cal;
+  const t = (c.drops>0 && c.vol>0) ? (c.tds*c.vol/1000)/c.drops : 0; // 1방울이 내는 TDS (mg)
+  const f = t/SACHET.tds;
+  return {ca:SACHET.ca*f, mg:SACHET.mg*f, na:SACHET.na*f, k:SACHET.k*f, hco3:0, tds:t, f};
+}
+function doseAdd(form, amount, volML){
+  if(!amount) return Object.assign({}, ZERO);
+  if(form === "drops"){
+    const p = perDrop(), L = Math.max(volML,1)/1000, o = {};
+    ["ca","mg","na","k","hco3","tds"].forEach(k => o[k] = p[k]*amount/L);
+    return o;
+  }
+  const o = {}; ["ca","mg","na","k","hco3","tds"].forEach(k => o[k] = SACHET[k]/amount); return o;
+}
+function baseOf(aId, bId, pct){
+  const A = byId(aId), B = bId ? byId(bId) : null;
+  return B ? mix([[A,pct/100],[B,1-pct/100]]) : mix([[A,1]]);
+}
+function doseText(form, amount, vol){
+  if(!amount) return "아쿠아코드 없이";
+  if(form === "drops"){ const per = amount*1000/vol; return `${f0(vol)} mL에 ${amount}방울` + (vol!==1000 ? ` (1 L 기준 ${f1(per)}방울)` : ""); }
+  return `1포를 ${f1(amount)} L에`;
+}
+
+// ---------- UI helpers ----------
+// ---------- UI helpers ----------
+const $ = id => document.getElementById(id);
+const f1 = v => (Math.round(v*10)/10).toLocaleString("ko-KR",{maximumFractionDigits:1});
+const f0 = v => Math.round(v).toLocaleString("ko-KR");
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+function fillSelects(){
+  const ws = waters();
+  const sa = $("selA"), sb = $("selB");
+  sa.innerHTML = ws.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join("");
+  sb.innerHTML = `<option value="">섞지 않음</option>` + ws.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join("");
+  if(!ws.some(w => w.id === store.a)) store.a = ws[0].id;
+  if(store.b && !ws.some(w => w.id === store.b)) store.b = "";
+  sa.value = store.a; sb.value = store.b;
+}
+
+// ---------- Chart ----------
+const W=560,H=420,PL=50,PR=16,PT=16,PB=44,MAX=400;
+const TICKS=[0,10,25,50,75,100,150,200,300,400];
+const sx = v => PL + Math.sqrt(Math.max(0,Math.min(MAX,v))/MAX)*(W-PL-PR);
+const sy = v => H-PB - Math.sqrt(Math.max(0,Math.min(MAX,v))/MAX)*(H-PT-PB);
+function rect(xr,yr,cls){ return `<rect x="${sx(xr[0])}" y="${sy(yr[1])}" width="${sx(xr[1])-sx(xr[0])}" height="${sy(yr[0])-sy(yr[1])}" ${cls}/>`; }
+function drawChart(A, B, base, total, ticks){
+  const pt = c => { const d = derive(c); return [sx(d.kh), sy(d.gh)]; };
+  let g = "";
+  TICKS.forEach(t => {
+    g += `<line x1="${sx(t)}" y1="${PT}" x2="${sx(t)}" y2="${H-PB}" stroke="var(--line)" stroke-width="1"/>`;
+    g += `<line x1="${PL}" y1="${sy(t)}" x2="${W-PR}" y2="${sy(t)}" stroke="var(--line)" stroke-width="1"/>`;
+    g += `<text x="${sx(t)}" y="${H-PB+16}" font-size="11" text-anchor="middle" fill="var(--muted)">${t}</text>`;
+    g += `<text x="${PL-6}" y="${sy(t)+4}" font-size="11" text-anchor="end" fill="var(--muted)">${t}</text>`;
+  });
+  g += `<text x="${(PL+W-PR)/2}" y="${H-8}" font-size="12" text-anchor="middle" fill="var(--muted)">알칼리도 KH</text>`;
+  g += `<text x="14" y="${(PT+H-PB)/2}" font-size="12" text-anchor="middle" fill="var(--muted)" transform="rotate(-90 14 ${(PT+H-PB)/2})">총경도 GH</text>`;
+  g += rect(SCA.kh, SCA.gh, `fill="var(--zone)" stroke="none"`);
+  g += `<text x="${sx(SCA.kh[1])-4}" y="${sy(SCA.gh[1])+14}" font-size="11" text-anchor="end" fill="var(--a)">SCA 권장</text>`;
+  const t = NUANCES.find(n => n.id === store.nuance);
+  if(t){ g += `<g><circle cx="${sx(t.kh)}" cy="${sy(t.gh)}" r="9" fill="none" stroke="var(--b)" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${sx(t.kh)+12}" y="${sy(t.gh)-8}" font-size="11" fill="var(--b)">목표: ${esc(t.name)}</text></g>`; }
+  if(B){
+    let path = "";
+    for(let i=0;i<=40;i++){ const f=i/40; const [x,y]=pt(mix([[A,f],[B,1-f]])); path += (i?"L":"M")+x.toFixed(1)+" "+y.toFixed(1); }
+    g += `<path d="${path}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" opacity=".45"/>`;
+    const [bx,by] = pt(mix([[B,1]]));
+    g += `<circle cx="${bx}" cy="${by}" r="6" fill="var(--muted)" opacity=".7"/><text x="${bx+9}" y="${by+4}" font-size="11" fill="var(--muted)">B</text>`;
+  }
+  const [ax,ay] = pt(mix([[A,1]]));
+  g += `<circle cx="${ax}" cy="${ay}" r="6" fill="var(--a)"/><text x="${ax+9}" y="${ay+4}" font-size="11" font-weight="600" fill="var(--a)">${B?"A":"생수"}</text>`;
+  const [px,py] = pt(base), [qx,qy] = pt(total);
+  if(Math.abs(qy-py) > 0.5){
+    g += `<line x1="${px}" y1="${py}" x2="${qx}" y2="${qy}" stroke="var(--mix)" stroke-width="3" stroke-linecap="round" opacity=".55"/>`;
+    ticks.forEach(c => { const [tx,ty] = pt(c); g += `<line x1="${tx-5}" y1="${ty}" x2="${tx+5}" y2="${ty}" stroke="var(--mix)" stroke-width="1.5"/>`; });
+    if(B) g += `<circle cx="${px}" cy="${py}" r="5" fill="var(--bg)" stroke="var(--muted)" stroke-width="2"/>`;
+  }
+  g += `<circle cx="${qx}" cy="${qy}" r="11" fill="var(--mix)" stroke="var(--bg)" stroke-width="3"/>`;
+  $("map").innerHTML = g;
+}
+
+// ---------- Render calculator ----------
+function currentAmount(){ return store.form === "drops" ? store.drops : store.powderL; }
+function render(){
+  const A = byId(store.a), B = store.b ? byId(store.b) : null, p = store.pct/100;
+  const base = baseOf(store.a, store.b, store.pct);
+  const amt = currentAmount();
+  const add = doseAdd(store.form, amt, store.vol);
+  const tot = addC(base, add), d = derive(tot);
+
+  // form panels
+  document.querySelectorAll("#formSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.form === store.form)));
+  $("dropsPanel").hidden = store.form !== "drops";
+  $("powderPanel").hidden = store.form !== "powder";
+  $("dropsOut").textContent = store.drops;
+  $("dropsRange").value = store.drops;
+  $("powderOut").textContent = f1(store.powderL)+" L";
+  $("bRow").hidden = !B;
+  $("pctAlabel").textContent = "A "+store.pct+"%"; $("pctBlabel").textContent = "B "+(100-store.pct)+"%";
+
+  // recipe
+  const vol = store.vol;
+  let recipe = "";
+  if(store.form === "drops"){
+    recipe = B ? `${esc(A.name)} <strong>${f0(vol*p)} mL</strong> + ${esc(B.name)} <strong>${f0(vol*(1-p))} mL</strong>` : `${esc(A.name)} <strong>${f0(vol)} mL</strong>`;
+    recipe += ` + 아쿠아코드 <strong>${store.drops}방울</strong>`;
+    if(store.drops && vol !== 1000) recipe += ` <span style="color:var(--muted)">(1 L 기준 ${f1(store.drops*1000/vol)}방울)</span>`;
+  } else {
+    const L = store.powderL;
+    recipe = B ? `${esc(A.name)} <strong>${f1(L*p)} L</strong> + ${esc(B.name)} <strong>${f1(L*(1-p))} L</strong>` : `${esc(A.name)} <strong>${f1(L)} L</strong>`;
+    recipe += ` + 아쿠아코드 <strong>1포</strong>`;
+  }
+  $("recipe").innerHTML = recipe;
+
+  // chart ticks for each drop
+  const ticks = [];
+  if(store.form === "drops" && store.drops <= 40){ for(let i=1;i<store.drops;i++) ticks.push(addC(base, doseAdd("drops", i, vol))); }
+  drawChart(A, B, base, tot, ticks);
+
+  const mgTxt = isNaN(d.mgShare) ? "–" : Math.round(d.mgShare*100)+"%";
+  $("metrics").innerHTML = [
+    ["총경도 GH", f0(d.gh), "추출력 · 권장 50–175"],
+    ["알칼리도 KH", f0(d.kh), "산미 완충 · 권장 40 안팎"],
+    ["GH : KH", d.kh > 0.5 ? (d.gh/d.kh).toFixed(1)+" : 1" : "KH ≈ 0", "클수록 산미 쪽"],
+    ["Mg 비중", mgTxt, "경도 중 마그네슘 몫"],
+    ["나트륨", f1(d.na), "mg/L · 30 이하 권장"],
+    ["TDS", "≈ "+f0(d.tds), "ppm · TDS 미터 예상값"]
+  ].map(([k,v,s]) => `<div class="metric"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
+
+  const fits = STYLES.map(s => ({s, v:styleScore(d,s)})).sort((a,b)=>b.v-a.v);
+  $("fits").innerHTML = fits.map(({s,v}) => `<div class="fit"><span>${s.name}</span><span class="bar"><i style="width:${v}%"></i></span><span class="n">${v}</span></div>`).join("");
+
+  const dB = derive(base);
+  $("ions").innerHTML = `<thead><tr><th></th><th>${B?"생수 블렌드":"생수"}</th><th>아쿠아코드</th><th style="color:var(--mix)">합계</th></tr></thead><tbody>`+
+    IONS.map(([k,label]) => `<tr><td>${label}</td><td>${f1(base[k])}</td><td>${k==="hco3" ? "0" : "+"+f1(add[k])}</td><td><strong>${f1(tot[k])}</strong></td></tr>`).join("")+
+    `<tr><td>GH / KH</td><td>${f0(dB.gh)} / ${f0(dB.kh)}</td><td>+${f0(d.gh-dB.gh)} / 0</td><td><strong>${f0(d.gh)} / ${f0(d.kh)}</strong></td></tr>`+
+    `<tr><td>TDS ≈</td><td>${f0(base.tds)}</td><td>+${f0(add.tds)}</td><td><strong>${f0(tot.tds)}</strong></td></tr></tbody>`;
+
+  const n = readNuance(d);
+  if(amt && d.kh < 15) n.notes.push(["조합", "아쿠아코드는 경도만 올리고 알칼리도는 더하지 않습니다. 산미를 조금 눌러 주고 싶다면 KH가 있는 생수(석수 세종, 와일드알프, 피지 등)를 물 B로 조금 섞어 보세요."]);
+  const wides = [A,B].filter(w => w && w.wide).map(w => w.name);
+  if(wides.length) n.notes.push(["데이터", `<span class="warn">${wides.map(esc).join(", ")}은(는) 라벨 범위가 매우 넓어 실제 병의 값과 크게 다를 수 있습니다.</span>`]);
+  $("tags").innerHTML = n.tags.map(t => `<span class="tag">${t}</span>`).join("");
+  $("notes").innerHTML = n.notes.map(([h,t]) => `<p><b>${h}</b> · ${t}</p>`).join("") +
+    `<p style="color:var(--muted);font-size:.9rem">가장 잘 맞는 추출은 <b style="color:var(--ink)">${fits[0].s.name}</b>입니다.</p>`;
+  renderCal();
+}
+
+function renderCal(){
+  const p = perDrop(), c = store.cal;
+  $("calVol").value = c.vol; $("calDrops").value = c.drops; $("calTds").value = c.tds;
+  const gh1 = p.ca*2.497 + p.mg*4.118;
+  $("calOut").innerHTML = p.tds > 0
+    ? `1방울 ≈ Ca ${p.ca.toFixed(2)} mg, Mg ${p.mg.toFixed(2)} mg, Na·K 각 ${p.na.toFixed(3)} mg · 파우더 1포의 1/${f0(1/p.f)}<br>물 1 L에 1방울을 넣을 때마다 GH가 약 <strong>${f1(gh1)}</strong>, TDS가 약 <strong>${f1(p.tds)}</strong> ppm 오릅니다.`
+    : `<span class="warn">값을 확인해 주세요.</span>`;
+}
+
+// ---------- Recommender ----------
+function renderNuanceChips(){
+  $("nuances").innerHTML = NUANCES.map(n => `<button class="chip" data-id="${n.id}" aria-pressed="${n.id===store.nuance}">${n.name}<small>${n.desc}</small></button>`).join("");
+}
+function renderOwned(){
+  const ws = waters();
+  if(!store.owned) store.owned = ws.map(w => w.id);
+  $("owned").innerHTML = ws.map(w => `<label><input type="checkbox" value="${esc(w.id)}" ${store.owned.includes(w.id)?"checked":""}> ${esc(w.name)}</label>`).join("");
+  $("pairs").checked = !!store.pairs;
+}
+function doseList(){
+  if(store.form === "drops"){ const max = Math.min(80, Math.max(12, Math.round(store.vol/500*25))); return Array.from({length:max+1}, (_,i) => i); }
+  const L = [0]; for(let x=20; x>=1.5; x-=0.5) L.push(Math.round(x*10)/10); return L;
+}
+function recommend(){
+  const t = NUANCES.find(n => n.id === store.nuance) || NUANCES[0];
+  const unit = store.form === "drops" ? `${f0(store.vol)} mL 기준 방울 수` : "파우더 1포에 맞출 물의 양";
+  $("targetInfo").textContent = `목표: GH ${t.gh} · KH ${t.kh} · Mg 비중 ${Math.round(t.mg*100)}% 근처, 나트륨 낮게 · ${unit}로 찾습니다`;
+  const ws = waters().filter(w => store.owned.includes(w.id));
+  if(!ws.length){ $("recs").innerHTML = `<p class="empty">가지고 있는 물을 하나 이상 체크하면 조합을 찾아 드립니다.</p>`; return; }
+  const bases = ws.map(w => ({a:w, b:null, p:100, c:mix([[w,1]])}));
+  if(store.pairs){
+    for(let i=0;i<ws.length;i++) for(let j=i+1;j<ws.length;j++) for(let p=10;p<=90;p+=10)
+      bases.push({a:ws[i], b:ws[j], p, c:mix([[ws[i],p/100],[ws[j],1-p/100]])});
+  }
+  const doses = doseList();
+  const bestByKey = new Map();
+  bases.forEach(bs => {
+    let best = null;
+    doses.forEach(x => { const d = derive(addC(bs.c, doseAdd(store.form, x, store.vol))); const s = nuanceScore(d, t); if(!best || s > best.s) best = {bs, x, d, s}; });
+    const key = bs.a.id + "|" + (bs.b ? bs.b.id : "");
+    const prev = bestByKey.get(key);
+    if(!prev || best.s > prev.s) bestByKey.set(key, best);
+  });
+  const top = [...bestByKey.values()].sort((x,y) => y.s - x.s).slice(0,5);
+  let html = top.map(r => {
+    const bs = r.bs;
+    const water = bs.b ? `${esc(bs.a.name)} ${bs.p}% + ${esc(bs.b.name)} ${100-bs.p}%` : esc(bs.a.name);
+    const mg = isNaN(r.d.mgShare) ? "–" : Math.round(r.d.mgShare*100)+"%";
+    return `<div class="rec"><div><div class="name">${water}</div><div class="dose">+ ${doseText(store.form, r.x, store.vol)}</div><div class="meta">GH ${f0(r.d.gh)} · KH ${f0(r.d.kh)} · Mg ${mg} · Na ${f1(r.d.na)} · TDS ≈ ${f0(r.d.tds)}</div></div>
+      <div class="score">${r.s}<span style="font-size:.6em;color:var(--muted)">점</span></div>
+      <div style="grid-column:1/-1"><button class="btn small" data-apply="${esc(bs.a.id)}|${bs.b?esc(bs.b.id):""}|${bs.p}|${r.x}">계산기에서 열기</button></div></div>`;
+  }).join("");
+  if(top[0] && top[0].s < 50){
+    const d = top[0].d;
+    const hint = d.kh < t.kh - 8
+      ? (store.pairs ? "KH가 높은 생수(석수 세종, 와일드알프, 피지 등)를 체크해 보세요. 아쿠아코드는 KH를 올리지 못합니다." : "아쿠아코드는 KH를 올리지 못합니다. ‘생수 두 가지까지 섞기’를 켜거나 KH가 높은 생수를 체크해 보세요.")
+      : d.kh > t.kh + 8
+      ? "베이스 생수의 KH가 목표보다 높습니다. 정제수(제로워터)를 체크하고 ‘생수 두 가지까지 섞기’를 켜 희석해 보세요."
+      : "체크한 물을 늘려 보세요.";
+    html += `<p class="empty">목표에 충분히 가까운 조합이 없습니다. ${hint}</p>`;
+  }
+  $("recs").innerHTML = html;
+}
+
+// ---------- Water database ----------
+// ---------- Water database ----------
+let editing = null;
+function renderTable(){
+  const ws = waters();
+  $("dbTable").innerHTML = `<thead><tr><th>이름</th><th>Ca</th><th>Mg</th><th>Na</th><th>K</th><th>HCO₃</th><th>TDS</th><th>GH</th><th>KH</th><th></th></tr></thead><tbody>`+
+    ws.map(w => { const d=derive(mix([[w,1]]));
+      const tag = w.custom ? ` <span class="est">직접 추가</span>` : w.edited ? ` <span class="est">수정됨</span>` : w.ocean ? ` <span class="est">해양심층수 · KH 거의 없음</span>` : w.wide ? ` <span class="est warn">범위 넓음</span>` : w.ranged ? ` <span class="est">범위 중간값</span>` : w.ref ? ` <span class="est">참고값</span>` : "";
+      const act = `<button class="btn small" data-edit="${esc(w.id)}">수정</button> ` + (w.custom ? `<button class="btn small" data-del="${esc(w.id)}">삭제</button>` : w.edited ? `<button class="btn small" data-reset="${esc(w.id)}">기본값</button>` : "");
+      return `<tr><td>${esc(w.name)}${tag}</td><td>${f1(w.ca)}</td><td>${f1(w.mg)}</td><td>${f1(w.na)}</td><td>${f1(w.k)}</td><td>${f1(w.hco3)}${w.est?'<span class="est">추정</span>':""}</td><td>${typeof w.tds==="number"?f0(w.tds):"≈"+f0(estTDS(w))}</td><td>${f0(d.gh)}</td><td>${f0(d.kh)}</td><td>${act}</td></tr>`; }).join("")+`</tbody>`;
+}
+const FIELDS = {fCa:"ca",fMg:"mg",fNa:"na",fK:"k",fHCO3:"hco3"};
+function resetForm(){ editing=null; $("editTitle").textContent="새 물 추가"; $("save").textContent="물 추가"; $("cancel").hidden=true; $("fName").value=""; $("fName").disabled=false; Object.keys(FIELDS).forEach(k=>$(k).value=""); $("fTDS").value=""; $("formMsg").textContent=""; }
+$("dbTable").addEventListener("click", e => {
+  const ed=e.target.closest("[data-edit]"), del=e.target.closest("[data-del]"), rs=e.target.closest("[data-reset]");
+  if(ed){ const w=byId(ed.dataset.edit); editing=w.id; $("editTitle").textContent=w.name+" 수정"; $("save").textContent="변경 저장"; $("cancel").hidden=false;
+    $("fName").value=w.name; $("fName").disabled=!w.custom; Object.entries(FIELDS).forEach(([k,f])=>$(k).value=w[f]); $("fTDS").value= typeof w.tds==="number"? w.tds : "";
+    $("editor").scrollIntoView({block:"start"}); }
+  if(del){ store.custom=store.custom.filter(w=>w.id!==del.dataset.del); store.owned=(store.owned||[]).filter(id=>id!==del.dataset.del); afterDataChange(); }
+  if(rs){ delete store.overrides[rs.dataset.reset]; afterDataChange(); }
+});
+$("cancel").addEventListener("click", resetForm);
+$("save").addEventListener("click", () => {
+  const name=$("fName").value.trim(); const vals={};
+  for(const [k,f] of Object.entries(FIELDS)){ const v=parseFloat($(k).value); if(isNaN(v)||v<0){ $("formMsg").textContent="칼슘, 마그네슘, 나트륨, 칼륨, 중탄산 값을 0 이상의 숫자로 모두 입력해 주세요."; return; } vals[f]=v; }
+  const tdsV=parseFloat($("fTDS").value); vals.tds = isNaN(tdsV) ? undefined : tdsV;
+  if(editing){
+    const w=byId(editing);
+    if(w.custom){ if(!name){ $("formMsg").textContent="이름을 입력해 주세요."; return; } Object.assign(store.custom.find(c=>c.id===editing), vals, {name}); }
+    else { store.overrides[editing] = Object.assign({}, vals, {est:false}); }
+  } else {
+    if(!name){ $("formMsg").textContent="이름을 입력해 주세요."; return; }
+    const id="c"+Date.now().toString(36); store.custom.push(Object.assign({id,name}, vals)); store.owned=(store.owned||[]).concat(id);
+  }
+  resetForm(); afterDataChange();
+});
+function afterDataChange(){ persist(); fillSelects(); renderOwned(); renderTable(); render(); recommend(); }
+
+// ---------- Wiring ----------
+function setDrops(n){ store.drops = Math.max(0, Math.min(80, Math.round(n))); persist(); render(); }
+$("selA").addEventListener("change", e => { store.a = e.target.value; persist(); render(); });
+$("selB").addEventListener("change", e => { store.b = e.target.value; persist(); render(); });
+$("ratio").addEventListener("input", e => { store.pct = +e.target.value; render(); });
+$("ratio").addEventListener("change", persist);
+$("formSeg").addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; store.form = b.dataset.form; persist(); render(); recommend(); });
+$("minus").addEventListener("click", () => setDrops(store.drops - 1));
+$("plus").addEventListener("click", () => setDrops(store.drops + 1));
+$("dropsRange").addEventListener("input", e => { store.drops = +e.target.value; render(); });
+$("dropsRange").addEventListener("change", persist);
+$("vol").addEventListener("input", e => { const v = +e.target.value; if(v > 0){ store.vol = v; persist(); render(); recommend(); } });
+$("powderRange").addEventListener("input", e => { store.powderL = +e.target.value; render(); });
+$("powderRange").addEventListener("change", () => { persist(); });
+["calVol","calDrops","calTds"].forEach(id => $(id).addEventListener("input", () => {
+  const v = +$("calVol").value, dr = +$("calDrops").value, t = +$("calTds").value;
+  if(v > 0 && dr > 0 && t >= 0){ store.cal = {vol:v, drops:dr, tds:t}; persist(); render(); recommend(); }
+}));
+$("calReset").addEventListener("click", () => { store.cal = Object.assign({}, DEF_CAL); persist(); render(); recommend(); });
+$("nuances").addEventListener("click", e => { const b = e.target.closest(".chip"); if(!b) return; store.nuance = b.dataset.id; persist(); renderNuanceChips(); recommend(); render(); });
+$("owned").addEventListener("change", () => { store.owned = [...$("owned").querySelectorAll("input:checked")].map(i => i.value); persist(); recommend(); });
+$("pairs").addEventListener("change", e => { store.pairs = e.target.checked; persist(); recommend(); });
+$("ownAll").addEventListener("click", () => { store.owned = waters().map(w => w.id); persist(); renderOwned(); recommend(); });
+$("ownNone").addEventListener("click", () => { store.owned = []; persist(); renderOwned(); recommend(); });
+$("recs").addEventListener("click", e => {
+  const b = e.target.closest("[data-apply]"); if(!b) return;
+  const [a, bb, p, x] = b.dataset.apply.split("|");
+  store.a = a; store.b = bb; store.pct = +p;
+  if(store.form === "drops") store.drops = +x; else if(+x) store.powderL = +x;
+  fillSelects(); $("ratio").value = store.pct; $("powderRange").value = store.powderL; persist(); render();
+  document.getElementById("calc").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+});
+
+try{
+  fillSelects(); $("ratio").value = store.pct; $("vol").value = store.vol; $("powderRange").value = store.powderL;
+  renderNuanceChips(); renderOwned(); renderTable(); render(); recommend();
+}catch(e){ if(window.__aqShowError) window.__aqShowError(e && e.message); }
+
+})();
+</script>
+</body>
+</html>
