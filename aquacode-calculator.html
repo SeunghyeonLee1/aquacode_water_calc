@@ -231,7 +231,7 @@ details.panel[open] summary{margin-bottom:8px}
 
 <section id="waters">
   <h2>생수 데이터</h2>
-  <p class="lead">기본값은 <a href="https://wateratlas.co.kr/bottled-water" target="_blank" rel="noopener">Water Atlas</a>가 정리한 제조사·공식 수입원·공공기관의 공개 성분표(2026년 11월 확인)입니다. 라벨이 범위로 표기된 제품은 중간값을 썼고, 같은 성분표를 쓰는 제품은 한 줄로 묶었습니다. 같은 브랜드라도 공장·로트마다 달라지니 손에 든 병의 라벨을 보고 수정해 주세요. 바꾼 값은 이 브라우저에만 저장됩니다. 중탄산(HCO₃⁻)을 공개하지 않은 제품은 양이온 당량의 66%를 중탄산으로 보고 추정했으며 “추정”으로 표시했습니다. 66%는 국립환경과학원이 조사한 국내 먹는샘물 원수 320곳의 평균 이온 조성에서 계산한 값입니다. 피지의 중탄산은 해외 라벨 공개값입니다. 단, 해양심층수는 탈염한 물에 염화물·황산염 위주의 미네랄 농축액을 더해 만들기 때문에 이 추정이 맞지 않아, 중탄산을 딥스 계열은 5 mg/L(KH 약 4), 자연드림 기픈물 3종은 0으로 두었습니다. 아쿠아 파나와 정제수는 블렌딩용 참고값입니다.</p>
+  <p class="lead">기본값은 <a href="https://wateratlas.co.kr/bottled-water" target="_blank" rel="noopener">Water Atlas</a>가 정리한 제조사·공식 수입원·공공기관의 공개 성분표(2026년 11월 확인)입니다. 라벨이 범위로 표기된 제품은 중간값을 썼고, 같은 성분표를 쓰는 제품은 한 줄로 묶었습니다. 같은 브랜드라도 공장·로트마다 달라지니 손에 든 병의 라벨을 보고 수정해 주세요. 바꾼 값은 이 브라우저에만 저장됩니다. 중탄산(HCO₃⁻)을 공개하지 않은 제품은 양이온 당량의 66%를 중탄산으로 보고 추정했으며 “추정”으로 표시했습니다. 66%는 국립환경과학원이 조사한 국내 먹는샘물 원수 320곳의 평균 이온 조성에서 계산한 값입니다. 피지의 중탄산은 해외 라벨 공개값입니다. 단, 해양심층수는 탈염한 물에 염화물·황산염 위주의 미네랄 농축액을 더해 만들기 때문에 이 추정이 맞지 않아, 중탄산을 딥스 계열은 5 mg/L(KH 약 4), 자연드림 기픈물 3종은 0으로 두었습니다. 강원평창수의 중탄산은 커뮤니티 실측 알칼리도 44.5(mg/L as CaCO₃)에서 환산한 값입니다. 아쿠아 파나와 정제수는 블렌딩용 참고값입니다.</p>
   <div class="panel" id="editor">
     <h3 id="editTitle">새 물 추가</h3>
     <div class="formgrid">
@@ -283,6 +283,7 @@ const RAW = [
   {id:"maekeun_pocheon", name:"맑은샘수 · 이동크리스탈(포천)", ca:[8.1,13.5], mg:[1.1,1.3], na:[4.7,6.7], k:[0.4,0.7]},
   {id:"maekeun_jirisan", name:"맑은샘 지리산", ca:[10.7,11.8], mg:[0,0.8], na:[3.6,4.6], k:[0,1.1]},
   {id:"montbest", name:"몽베스트", ca:[7.6,12.2], mg:[1.2,1.3], na:[5.1,6.7], k:[0.4,0.7]},
+  {id:"pyeongchang", name:"강원평창수", ca:[14.05,18.15], mg:[2.49,3.44], na:[6.02,7.21], k:[0.65,0.72], hco3:54.3, measured:true},
   {id:"deeps_green", name:"딥스 그린 · 풀무원 해양심층수", ca:[5,9], mg:[15,26], na:[3,11], k:[4,9], hco3:5, ocean:true},
   {id:"deeps_blue", name:"딥스 블루 · 키즈", ca:[6,14], mg:[24,36], na:[5,16], k:[7,13], hco3:5, ocean:true},
   {id:"deeps_gold", name:"딥스 골드", ca:[10,18], mg:[33,48], na:[7,22], k:[10,18], hco3:5, ocean:true},
@@ -304,7 +305,7 @@ const BASE = RAW.map(r => {
   const w = {id:r.id, name:r.name, wide:!!r.wide, ref:!!r.ref, ranged:["ca","mg","na","k"].some(k=>Array.isArray(r[k]))};
   ["ca","mg","na","k"].forEach(k => w[k] = Math.round(mid(r[k])*100)/100);
   if(typeof r.tds === "number") w.tds = r.tds;
-  w.ocean = !!r.ocean;
+  w.ocean = !!r.ocean; w.measured = !!r.measured;
   if(typeof r.hco3 === "number"){ w.hco3 = r.hco3; if(r.ocean) w.est = true; }
   else { const meq = w.ca/20.04 + w.mg/12.15 + w.na/22.99 + w.k/39.1; w.hco3 = Math.round(meq*0.66*61.02*10)/10; w.est = true; }
   return w;
@@ -360,7 +361,7 @@ try{ const raw = localStorage.getItem(KEY); if(raw){ const saved = JSON.parse(ra
   if(!NUANCES.some(n => n.id === s.nuance)) s.nuance = "bright";
   s.pairs = !!s.pairs;
 })(store);
-(function(){ const NEW=["giffeun_just","giffeun_mg","giffeun_refillm"]; const ids=BASE.map(w=>w.id); const known=Array.isArray(store.known)?store.known:ids.filter(id=>!NEW.includes(id)); if(Array.isArray(store.owned)) ids.forEach(id=>{ if(!known.includes(id) && !store.owned.includes(id)) store.owned.push(id); }); store.known=ids; })();
+(function(){ const NEW=["giffeun_just","giffeun_mg","giffeun_refillm","pyeongchang"]; const ids=BASE.map(w=>w.id); const known=Array.isArray(store.known)?store.known:ids.filter(id=>!NEW.includes(id)); if(Array.isArray(store.owned)) ids.forEach(id=>{ if(!known.includes(id) && !store.owned.includes(id)) store.owned.push(id); }); store.known=ids; })();
 function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
 function waters(){
   const base = BASE.map(w => store.overrides[w.id] ? Object.assign({}, w, store.overrides[w.id], {edited:true}) : Object.assign({}, w));
@@ -645,7 +646,7 @@ function renderTable(){
   const ws = waters();
   $("dbTable").innerHTML = `<thead><tr><th>이름</th><th>Ca</th><th>Mg</th><th>Na</th><th>K</th><th>HCO₃</th><th>TDS</th><th>GH</th><th>KH</th><th></th></tr></thead><tbody>`+
     ws.map(w => { const d=derive(mix([[w,1]]));
-      const tag = w.custom ? ` <span class="est">직접 추가</span>` : w.edited ? ` <span class="est">수정됨</span>` : w.ocean ? ` <span class="est">해양심층수 · KH 거의 없음</span>` : w.wide ? ` <span class="est warn">범위 넓음</span>` : w.ranged ? ` <span class="est">범위 중간값</span>` : w.ref ? ` <span class="est">참고값</span>` : "";
+      const tag = w.custom ? ` <span class="est">직접 추가</span>` : w.edited ? ` <span class="est">수정됨</span>` : w.ocean ? ` <span class="est">해양심층수 · KH 거의 없음</span>` : w.measured ? ` <span class="est">KH 실측값</span>` : w.wide ? ` <span class="est warn">범위 넓음</span>` : w.ranged ? ` <span class="est">범위 중간값</span>` : w.ref ? ` <span class="est">참고값</span>` : "";
       const act = `<button class="btn small" data-edit="${esc(w.id)}">수정</button> ` + (w.custom ? `<button class="btn small" data-del="${esc(w.id)}">삭제</button>` : w.edited ? `<button class="btn small" data-reset="${esc(w.id)}">기본값</button>` : "");
       return `<tr><td>${esc(w.name)}${tag}</td><td>${f1(w.ca)}</td><td>${f1(w.mg)}</td><td>${f1(w.na)}</td><td>${f1(w.k)}</td><td>${f1(w.hco3)}${w.est?'<span class="est">추정</span>':""}</td><td>${typeof w.tds==="number"?f0(w.tds):"≈"+f0(estTDS(w))}</td><td>${f0(d.gh)}</td><td>${f0(d.kh)}</td><td>${act}</td></tr>`; }).join("")+`</tbody>`;
 }
