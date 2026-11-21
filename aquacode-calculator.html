@@ -251,7 +251,7 @@ details.panel[open] summary{margin-bottom:8px}
 </section>
 <footer>
   <p>아쿠아코드 성분은 제조사의 7L 희석표 기준입니다. 1포에 Ca 31.1, Mg 84.0, Na 2.8, K 2.8 mg이 들어 있고(1 L에 녹이면 TDS 590 ppm), 드롭스도 같은 조성으로 보았습니다. 희석표에 중탄산이 없어 아쿠아코드가 더하는 알칼리도는 0으로 계산합니다. 한 방울의 양은 기본값(제로워터 500 mL + 3방울 = 50 ppm)으로 1포의 약 1/71이며, 방울 크기와 TDS 미터에 따라 달라지니 보정 칸에서 직접 맞춰 주세요.</p>
-  <p>생수 성분은 Water Atlas가 정리한 공개 성분표의 중간값이며, 중탄산을 공개하지 않은 국내 제품은 국립환경과학원 먹는샘물 원수 조사의 평균 이온 조성을 바탕으로 추정했습니다(±20~25%). 생수 TDS는 이온 합으로 추정한 값이라 미터 측정값과 다를 수 있습니다. GH = Ca×2.497 + Mg×4.118, KH = HCO₃×0.820 (mg/L as CaCO₃). 추출 범위와 뉘앙스 해설은 참고용 출발점입니다.</p>
+  <p>생수 성분은 Water Atlas가 정리한 공개 성분표의 중간값이며, 중탄산을 공개하지 않은 국내 제품은 국립환경과학원 먹는샘물 원수 조사의 평균 이온 조성을 바탕으로 추정했습니다(±20~25%). 생수 TDS는 라벨의 양이온과 중탄산에, 전하 균형상 함께 녹아 있어야 하는 염화물·황산염 같은 음이온을 더해 추정합니다(삼다수 38, 평창수 74로 커뮤니티 TDS 미터 실측 37, 79와 비슷). 실리카는 빠져 있어 실제보다 조금 낮을 수 있습니다. GH = Ca×2.497 + Mg×4.118, KH = HCO₃×0.820 (mg/L as CaCO₃). 추출 범위와 뉘앙스 해설은 참고용 출발점입니다.</p>
 </footer>
 </div>
 <script>
@@ -370,7 +370,9 @@ function waters(){
 function byId(id){ return waters().find(w => w.id === id); }
 
 // ---------- Chemistry ----------
-const estTDS = w => w.ca + w.mg + w.na + w.k + w.hco3*0.49;
+// TDS 추정: 양이온 + 중탄산(증발 기준 ×0.49) + 전하 균형으로 남는 음이온(염화물·황산염 등).
+// 남는 음이온 1 meq당 질량: 일반 생수 44.6 mg(국립환경과학원 평균 Cl·SO₄·NO₃·F 조성), 해양심층수 36.6 mg(바닷물 Cl·SO₄ 비율). 실리카는 포함하지 않음.
+const estTDS = w => { const cat = w.ca/20.04 + w.mg/12.15 + w.na/22.99 + w.k/39.1; const rest = Math.max(0, cat - w.hco3/61.02); return w.ca + w.mg + w.na + w.k + w.hco3*0.49 + rest*(w.ocean ? 36.6 : 44.6); };
 const tdsOf = w => (typeof w.tds === "number" && !isNaN(w.tds)) ? w.tds : estTDS(w);
 function mix(list){ // list of [water, fraction]
   const o = {ca:0,mg:0,na:0,k:0,hco3:0,tds:0};
